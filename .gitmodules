@@ -1,0 +1,4 @@
+[submodule "dotatools"]
+	path = dotatools
+	url = https://github.com/CAPTAIN-WHU/DOTA_devkit.git
+	branch = master
