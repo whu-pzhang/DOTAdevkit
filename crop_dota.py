@@ -1,11 +1,9 @@
-import utils as util
 import os
-import ImgSplit_multi_process
-import SplitOnlyImage_multi_process
-import shutil
-from multiprocessing import Pool
-from DOTA2COCO import DOTA2COCOTest, DOTA2COCOTrain
+from pathlib import Path
 import argparse
+
+from dotatools import ImgSplit_multi_process
+from dotatools import SplitOnlyImage_multi_process
 
 wordname_15 = [
     'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
@@ -21,104 +19,57 @@ def parse_args():
     parser.add_argument('--dstpath',
                         default=r'/home/dingjian/workfs/dota1-split-1024',
                         help='prepare data')
+    parser.add_argument('--subsize',
+                        type=int,
+                        default=1024,
+                        help='patch size of sub-images')
+    parser.add_argument('--gap',
+                        type=int,
+                        default=512,
+                        help='overlap between two patches')
     args = parser.parse_args()
 
     return args
 
 
-def single_copy(src_dst_tuple):
-    shutil.copyfile(*src_dst_tuple)
-
-
-def filecopy(srcpath, dstpath, num_process=32):
-    pool = Pool(num_process)
-    filelist = util.GetFileFromThisRootDir(srcpath)
-
-    name_pairs = []
-    for file in filelist:
-        basename = os.path.basename(file.strip())
-        dstname = os.path.join(dstpath, basename)
-        name_tuple = (file, dstname)
-        name_pairs.append(name_tuple)
-
-    pool.map(single_copy, name_pairs)
-
-
-def singel_move(src_dst_tuple):
-    shutil.move(*src_dst_tuple)
-
-
-def filemove(srcpath, dstpath, num_process=32):
-    pool = Pool(num_process)
-    filelist = util.GetFileFromThisRootDir(srcpath)
-
-    name_pairs = []
-    for file in filelist:
-        basename = os.path.basename(file.strip())
-        dstname = os.path.join(dstpath, basename)
-        name_tuple = (file, dstname)
-        name_pairs.append(name_tuple)
-
-    pool.map(filemove, name_pairs)
-
-
-def getnamelist(srcpath, dstfile):
-    filelist = util.GetFileFromThisRootDir(srcpath)
-    with open(dstfile, 'w') as f_out:
-        for file in filelist:
-            basename = util.mybasename(file)
-            f_out.write(basename + '\n')
-
-
-def prepare(srcpath, dstpath):
+def prepare(srcpath, dstpath, subsize, gap):
     """
     :param srcpath: train, val, test
           train --> trainval1024, val --> trainval1024, test --> test1024
     :return:
     """
-    if not os.path.exists(os.path.join(dstpath, 'test800')):
-        os.mkdir(os.path.join(dstpath, 'test800'))
-    if not os.path.exists(os.path.join(dstpath, 'train800')):
-        os.mkdir(os.path.join(dstpath, 'train800'))
-    if not os.path.exists(os.path.join(dstpath, 'val800')):
-        os.mkdir(os.path.join(dstpath, 'val800'))
+    dstpath = Path(dstpath)
+    train_dir = dstpath / f'train{subsize}'
+    val_dir = dstpath / f'val{subsize}'
+    test_dir = dstpath / f'test{subsize}/images'  # test_dir only has images directory
+
+    # train_dir.mkdir(parents=True, exist_ok=True)
+    # val_dir.mkdir(parents=True, exist_ok=True)
+    # test_dir.mkdir(parents=True, exist_ok=True)
+
+    split_kwargs = {
+        'subsize': subsize,
+        'gap': gap,
+        'num_process': 8,
+    }
 
     split_train = ImgSplit_multi_process.splitbase(
-        os.path.join(srcpath, 'train'),
-        os.path.join(dstpath, 'train800'),
-        gap=200,
-        subsize=800,
-        num_process=32)
+        os.path.join(srcpath, 'train'), train_dir, **split_kwargs)
     split_train.splitdata(1)
 
     split_val = ImgSplit_multi_process.splitbase(os.path.join(srcpath, 'val'),
-                                                 os.path.join(
-                                                     dstpath, 'val800'),
-                                                 gap=200,
-                                                 subsize=800,
-                                                 num_process=32)
+                                                 val_dir, **split_kwargs)
     split_val.splitdata(1)
 
     split_test = SplitOnlyImage_multi_process.splitbase(
-        os.path.join(srcpath, 'test', 'images'),
-        os.path.join(dstpath, 'test800', 'images'),
-        gap=200,
-        subsize=800,
-        num_process=32)
+        os.path.join(srcpath, 'test', 'images'), test_dir, **split_kwargs)
     split_test.splitdata(1)
-
-    # DOTA2COCOTrain(
-    #     os.path.join(dstpath, 'trainval1024'),
-    #     os.path.join(dstpath, 'trainval1024', 'DOTA_trainval1024.json'),
-    #     wordname_15,
-    #     difficult='-1')
-    # DOTA2COCOTest(
-    #     os.path.join(dstpath, 'test1024'),
-    #     os.path.join(dstpath, 'test1024', 'DOTA_test1024.json'), wordname_15)
 
 
 if __name__ == '__main__':
     args = parse_args()
     srcpath = args.srcpath
     dstpath = args.dstpath
-    prepare(srcpath, dstpath)
+    subsize = args.subsize
+    gap = args.gap
+    prepare(srcpath, dstpath, subsize, gap)
