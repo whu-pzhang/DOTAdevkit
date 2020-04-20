@@ -34,7 +34,7 @@ class splitbase():
         self.padding = padding
         self.pool = Pool(num_process)
 
-        self.outpath.mkdir(parents=true, exist_ok=True)
+        self.outpath.mkdir(parents=True, exist_ok=True)
 
     def saveimagepatches(self, img, subimgname, left, up, ext='.png'):
         subimg = copy.deepcopy(
