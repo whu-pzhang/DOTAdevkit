@@ -23,6 +23,20 @@ wordname_16 = [
 ]
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('root', type=str, help='cropped DOTA dataset path')
+    parser.add_argument('out_json', type=str, help='output json file')
+    parser.add_argument('-c',
+                        '--class_names',
+                        nargs='*',
+                        default=wordname_15,
+                        help='class names list you want to convert')
+
+    args = parser.parse_args()
+    return args
+
+
 def DOTA2COCO(srcpath, dstfile=None, class_names=None):
 
     txt_path = Path(srcpath) / 'labelTxt'
@@ -126,15 +140,21 @@ def parse_dota_anno(ann_file, select_classes=None):
 
 
 if __name__ == "__main__":
-    # train
-    DOTA2COCO(
-        r'/home/pzhang/data/DOTA/dota1.0_split/train800/',
-        r'/home/pzhang/data/DOTA/dota1.0_split/DOTA_vehicle_train800.json',
-        class_names=('small-vehicle', 'large-vehicle'),
-    )
-    # val
-    DOTA2COCO(
-        r'/home/pzhang/data/DOTA/dota1.0_split/val800/',
-        r'/home/pzhang/data/DOTA/dota1.0_split/DOTA_vehicle_val800.json',
-        class_names=('small-vehicle', 'large-vehicle'),
-    )
+    args = parse_args()
+    assert set(args.class_names).issubset(set(wordname_15))
+    print(args)
+
+    DOTA2COCO(args.root, args.out_json, args.class_names)
+
+    # # train
+    # DOTA2COCO(
+    #     r'/home/pzhang/data/DOTA/dota1.0_split/train800/',
+    #     r'/home/pzhang/data/DOTA/dota1.0_split/DOTA_small-vehicle_train800.json',
+    #     class_names=('small-vehicle', ),
+    # )
+    # # val
+    # DOTA2COCO(
+    #     r'/home/pzhang/data/DOTA/dota1.0_split/val800/',
+    #     r'/home/pzhang/data/DOTA/dota1.0_split/DOTA_small-vehicle_val800.json',
+    #     class_names=('small-vehicle', ),
+    # )
