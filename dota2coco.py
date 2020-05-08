@@ -1,4 +1,4 @@
-# Convert splited DOTA dataset into COCO format
+# Convert splited DOTA dataset annotations into COCO format
 
 from pathlib import Path
 import argparse
@@ -141,8 +141,8 @@ def parse_dota_anno(ann_file, select_classes=None):
 
 if __name__ == "__main__":
     args = parse_args()
-    assert set(args.class_names).issubset(set(wordname_15))
     print(args)
+    assert set(args.class_names).issubset(set(wordname_15))
 
     DOTA2COCO(args.root, args.out_json, args.class_names)
 
